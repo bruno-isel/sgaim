@@ -107,8 +107,7 @@ class Value:
     def __truediv__(self, other): return self * other**-1
     def __rtruediv__(self, other): return other * self**-1
 
-    # -- TODO 3: Backward pass ------------------------------------
-    #
+    # -- TODO 3: Backward pass -----------------------------------
     # Compute the gradient of every node in the graph with respect
     # to this node (self).
     #
@@ -124,9 +123,24 @@ class Value:
     # Think about a node that feeds into two different operations.
     # Its gradient is the SUM of contributions from both paths.
 
-    def backward(self):
-        raise NotImplementedError
+    # (a * b) + a = c 
 
+    def backward(self):
+        topo = []
+        visited = set()
+
+        def topo_build(v): # c [t, a]
+            if v not in visited:
+                visited.add(v)
+                for child in v._children: # t[a, b]
+                    topo_build(child) # a
+                topo.append(v)
+        
+        topo_build(self)
+        self.grad = 1
+        for v in reversed(topo):
+            for child, local_grad in zip(v._children, v._local_grads): # [(a, local_grad), (b, local_grad)]
+                child.grad += local_grad * v.grad
 
 # ==============================================================
 # TESTS
