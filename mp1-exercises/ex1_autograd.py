@@ -98,6 +98,10 @@ class Value:
     def relu(self):
         return Value(max(0, self.data), children=(self,), local_grads=(1 if self.data > 0 else 0,))
 
+    def tanh(self):
+        t = math.tanh(self.data)
+        return Value(t, children=(self,), local_grads=(1 - t**2,))
+
     # PROVIDED: operator wiring (uses your __add__ and __mul__)
     def __neg__(self): return self * -1
     def __radd__(self, other): return self + other
@@ -129,14 +133,14 @@ class Value:
         topo = []
         visited = set()
 
-        def topo_build(v): # c [t, a]
+        def topo_builder(v): # c [t, a]
             if v not in visited:
                 visited.add(v)
                 for child in v._children: # t[a, b]
-                    topo_build(child) # a
+                    topo_builder(child) # a
                 topo.append(v)
         
-        topo_build(self)
+        topo_builder(self)
         self.grad = 1
         for v in reversed(topo):
             for child, local_grad in zip(v._children, v._local_grads): # [(a, local_grad), (b, local_grad)]
@@ -201,6 +205,14 @@ if __name__ == "__main__":
     numerical = (f(2.0 + eps) - f(2.0 - eps)) / (2 * eps)
     assert abs(x.grad - numerical) < 1e-4
     print("  [pass] numerical gradient check")
+
+    x = Value(1.0)
+    y = x.tanh()
+    y.backward()
+    eps = 1e-5
+    numerical = (math.tanh(1.0 + eps) - math.tanh(1.0 - eps)) / (2 * eps)
+    assert abs(x.grad - numerical) < 1e-4
+    print("  [pass] tanh gradient")
 
     print("\n  Part A complete.\n")
 
