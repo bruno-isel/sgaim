@@ -209,7 +209,7 @@ if __name__ == "__main__":
     # == THINK =================================================
     # Our vocabulary will have 27 tokens (a-z plus a special
     # BOS token).  If a random model assigns equal probability
-    # to each token, what is -log(1/27)?
+    # to each token, what is -log(1/27)? ~3.295
     #
     # Calculate it now. This is the loss you should expect
     # BEFORE any training.  You'll verify this in Exercise 5.
@@ -231,7 +231,9 @@ if __name__ == "__main__":
     #   BOS        — integer token ID for Beginning-of-Sequence
     #               (assign it the next ID after all characters)
     #   vocab_size — total number of tokens (characters + BOS)
-    raise NotImplementedError("TODO 4")
+    uchars = sorted(set(''.join(docs)))
+    BOS = len(uchars)
+    vocab_size = len(uchars) + 1
 
     # -- TODO 5: Encode and decode -----------------------------
     #
