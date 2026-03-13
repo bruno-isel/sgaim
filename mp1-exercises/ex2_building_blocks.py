@@ -72,7 +72,7 @@ def linear(x, w):
 
 # == THINK =====================================================
 # softmax must produce a valid probability distribution.
-# What two properties MUST the output satisfy?
+# What two properties MUST the output satisfy? valores positivos e soma 1
 # (Write them down before implementing.)
 # ==============================================================
 
@@ -84,7 +84,16 @@ def linear(x, w):
 # Output:  a list of Values that form a probability distribution
 
 def softmax(logits):
-    raise NotImplementedError
+    # Numerical stability: subtract max to prevent overflow in exp
+    max_logit = max(l.data for l in logits)
+
+    # Compute exp(x_i - max)
+    exps = [l - max_logit for l in logits]
+    exps = [e.exp() for e in exps]
+
+    # Divide by sum of exps
+    sum_exp = sum(exps)
+    return [e / sum_exp for e in exps]
 
 
 # -- TODO 3: RMS Normalization ---------------------------------
@@ -98,7 +107,9 @@ def softmax(logits):
 #            output_i = x_i / sqrt( mean(x_i^2) + 1e-5 )
 
 def rmsnorm(x):
-    raise NotImplementedError
+    mean_square = sum(v**2 for v in x) / len(x)
+    rms = (mean_square + 1e-5)**0.5
+    return [v / rms for v in x]
 
 
 # ==============================================================
