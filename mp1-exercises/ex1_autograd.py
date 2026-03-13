@@ -240,10 +240,18 @@ if __name__ == "__main__":
     # encode(text) -> list[int]  : each character -> its index in uchars
     # decode(ids)  -> str        : each token ID  -> its character (skip BOS)
     def encode(text):
-        raise NotImplementedError("TODO 5")
+        encoded_text = []
+        for c in text:
+            c = uchars.index(c)
+            encoded_text.append(c)
+        return encoded_text
 
     def decode(token_ids):
-        raise NotImplementedError("TODO 5")
+        decoded_text = ''
+        for id in token_ids:
+            if id != BOS:
+                decoded_text += uchars[id]
+        return decoded_text
 
     assert vocab_size == 27 and BOS == 26
     assert encode("abc") == [0, 1, 2]
