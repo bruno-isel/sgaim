@@ -81,22 +81,22 @@ class Value:
     # local gradient.  For unary ops there is only one child (self).
     #
     # Derive each derivative yourself:
-    #   x ** n    ->  d/dx = ?       (n is a constant, not a Value)
-    #   log(x)    ->  d/dx = ?
-    #   exp(x)    ->  d/dx = ?
-    #   relu(x)   ->  d/dx = ?       (relu(x) = max(0, x))
+    #   x ** n    ->  d/dx = n * x^(n-1)       (n is a constant, not a Value)
+    #   log(x)    ->  d/dx = 1/x
+    #   exp(x)    ->  d/dx = exp(x)
+    #   relu(x)   ->  d/dx = 1 if x > 0 else 0       (relu(x) = max(0, x))
 
     def __pow__(self, n):     # n is a plain number, not a Value
-        raise NotImplementedError
+        return Value(self.data ** n, children=(self,), local_grads=(n * self.data ** (n - 1),))
 
     def log(self):
-        raise NotImplementedError
+        return Value(math.log(self.data), children=(self,), local_grads=(1 / self.data,))
 
     def exp(self):
-        raise NotImplementedError
+        return Value(math.exp(self.data), children=(self,), local_grads=(math.exp(self.data),))
 
     def relu(self):
-        raise NotImplementedError
+        return Value(max(0, self.data), children=(self,), local_grads=(1 if self.data > 0 else 0,))
 
     # PROVIDED: operator wiring (uses your __add__ and __mul__)
     def __neg__(self): return self * -1
