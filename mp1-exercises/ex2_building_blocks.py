@@ -64,8 +64,11 @@ class Value:
 # Each output element is the dot product of one row of w with x.
 
 def linear(x, w):
-    raise NotImplementedError
-
+    out = []
+    for row in w:
+        dot = sum(w_i * x_i for w_i, x_i in zip(row, x))
+        out.append(dot)
+    return out
 
 # == THINK =====================================================
 # softmax must produce a valid probability distribution.
