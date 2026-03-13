@@ -66,10 +66,14 @@ class Value:
     # by wrapping it in a Value first.
 
     def __add__(self, other):
-        raise NotImplementedError
+        if not isinstance(other, Value):
+            other = Value(other)
+        return Value(self.data + other.data, children=(self, other), local_grads=(1, 1))
 
     def __mul__(self, other):
-        raise NotImplementedError
+        if not isinstance(other, Value):
+            other = Value(other)
+        return Value(self.data * other.data, children=(self, other), local_grads=(other.data, self.data))
 
     # -- TODO 2: Unary operations ----------------------------------
     #
