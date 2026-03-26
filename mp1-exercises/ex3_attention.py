@@ -99,11 +99,17 @@ state_dict = {
 # and the past).  It cannot see the future.
 #
 # 1. When processing the FIRST token (position 0), how many
-#    tokens can it attend to?  What will the attention weights be?
+#    tokens can it attend to?  1, unica posicao
+# 
+# What will the attention weights be?
+#.  Os pesos de atenção serão [1.0] — softmax de um único valor dá sempre 1.
 #
 # 2. When processing the THIRD token (position 2), it attends to
 #    3 tokens.  The attention weights will sum to 1.  But are
 #    they equal?  What determines how much weight each gets?
+
+#    Não são iguais. Cada peso depende da similaridade (Q·K) entre o query
+#    do token atual e a key de cada token passado. maior similaridade = mais peso.
 #
 # Write your predictions.  Test 4 will check prediction #1.
 # ==============================================================
@@ -136,7 +142,11 @@ def single_head_attn(token_id, pos_id, keys, values):
     #
     # Then APPEND k to the keys list and v to the values list.
     # This builds the "KV cache" — the memory of past tokens.
-    raise NotImplementedError("TODO 1")
+    q = linear(x, state_dict['attn_wq'])
+    k = linear(x, state_dict['attn_wk'])
+    v = linear(x, state_dict['attn_wv'])
+    keys.append(k)
+    values.append(v)
 
     # -- TODO 2: Compute attention scores -----------------------
     #
@@ -148,13 +158,19 @@ def single_head_attn(token_id, pos_id, keys, values):
     # large as the dimension increases.
     #
     # Result: a list of Values, one score per position.
-    raise NotImplementedError("TODO 2")
+    scale = head_dim ** 0.5
+    attn_scores = []
+    for t in range(len(keys)):
+        score = 0
+        for j in range(head_dim):
+            score += q[j] * keys[t][j]
+        attn_scores.append(score / scale)
 
     # -- TODO 3: Attention weights ------------------------------
     #
     # Apply softmax to the attention scores to get a probability
     # distribution over positions.
-    raise NotImplementedError("TODO 3")
+    attn_weights = softmax(attn_scores)
 
     # -- TODO 4: Weighted sum of values -------------------------
     #
@@ -163,7 +179,12 @@ def single_head_attn(token_id, pos_id, keys, values):
     #
     # for each dimension j in range(head_dim).
     # Result: a list of Values, length head_dim.
-    raise NotImplementedError("TODO 4")
+    head_out = []
+    for j in range(head_dim):
+        total = 0
+        for t in range(len(values)):
+            total += attn_weights[t] * values[t][j]
+        head_out.append(total)
 
     # PROVIDED: output projection
     output = linear(head_out, state_dict['attn_wo'])
