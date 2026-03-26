@@ -150,7 +150,7 @@ print(f"Dataset: {len(docs)} names, {vocab_size} tokens, {len(params)} params")
 # each token: p = 1/27.
 #
 # The cross-entropy loss for one prediction is -log(p_correct).
-# What is -log(1/27)?   Calculate it now.
+# What is -log(1/27)?   Calculate it now. = 3.296
 #
 # This is your EXPECTED INITIAL LOSS.  If your first loss value
 # is very different from this number, something is wrong.
@@ -185,7 +185,15 @@ def compute_loss(tokens):
     keys = [[] for _ in range(n_layer)]
     values = [[] for _ in range(n_layer)]
 
-    raise NotImplementedError("TODO 1: compute cross-entropy loss")
+    losses = []
+    for pos_id in range(n):
+        tid = tokens[pos_id]
+        target = tokens[pos_id + 1]
+        logits = gpt(tid, pos_id, keys, values)
+        probs = softmax(logits)
+        losses.append(-probs[target].log())
+    loss = sum(losses) / n
+    return loss
 
 
 # ==============================================================
@@ -201,7 +209,9 @@ def compute_loss(tokens):
 # Implement sgd_step(params, learning_rate).
 
 def sgd_step(params, learning_rate):
-    raise NotImplementedError("TODO 2: SGD step")
+    for p in params:
+        p.data -= learning_rate * p.grad
+        p.grad = 0
 
 
 # -- TODO 3: Adam optimizer ------------------------------------
@@ -222,7 +232,14 @@ def sgd_step(params, learning_rate):
 # step is 1-indexed (first call is step=1).
 
 def adam_step(params, m_buf, v_buf, lr, step, beta1=0.85, beta2=0.99, eps=1e-8):
-    raise NotImplementedError("TODO 3: Adam step")
+    for i, p in enumerate(params):
+        grad = p.grad
+        m_buf[i] = beta1 * m_buf[i] + (1 - beta1) * grad
+        v_buf[i] = beta2 * v_buf[i] + (1 - beta2) * grad ** 2
+        m_hat = m_buf[i] / (1 - beta1 ** step)
+        v_hat = v_buf[i] / (1 - beta2 ** step)
+        p.data -= lr * m_hat / (v_hat ** 0.5 + eps)
+        p.grad = 0
 
 
 # ==============================================================
@@ -247,7 +264,7 @@ if __name__ == "__main__":
             print(f"  step {step+1:3d} | loss {loss.data:.4f}")
 
     # == Check your THINK answer ================================
-    # Is the initial loss close to -log(1/27) = 3.296 ?
+    # Is the initial loss close to -log(1/27) = 3.296 ? 3.66
     # If it's much higher or lower, debug your compute_loss.
     # ==========================================================
     print(f"\n  Initial loss: {sgd_losses[0]:.4f}  (expected ~3.30)")
@@ -311,16 +328,22 @@ if __name__ == "__main__":
 #    faster?  Adam uses momentum (smoothed gradient direction) and
 #    adaptive learning rates (different rate per parameter).
 #    Why does this help?
+#  Adam comverge mais rapido, adapta leaarning rate por parametro e tem momentum. Acelera convergencia e evita oscilacoes.
+#  SGD igual para todos os parametros, pode oscilar e ser mais lento.
 #
 # 2. We used linear learning rate decay: lr decreases to zero
 #    over training.  Why not keep lr constant?  What happens
 #    if lr is too high at the end of training?  (Think about
 #    overshooting the minimum.)
+#. Com lr constante alto no fim, o modelo oscila à volta do mínimo sem convergir
 #
 # 3. The initial loss should be ~3.30.  After training, it drops
 #    to ~2.x.  The theoretical minimum is 0 (perfect prediction).
 #    Why can't this tiny model reach 0?  What would need to
 #    change for it to get closer?
+# Modelo pequeno, apenas 16 camadas.
+# Para chegar a 0 é necessário mais camadas e mais cabeças de atenção, para modelar melhor as dependências entre os tokens.
+# mais dados e mais tempo de treino
 # ==============================================================
 
 # == EXPLORE (optional) ========================================

@@ -1,0 +1,38 @@
+Dataset: 32033 names, 27 tokens, 4192 params
+
+============================================================
+ Exercise 5: Training
+============================================================
+
+--- Phase 1: SGD (50 steps) ---
+  step   1 | loss 3.6607
+  step  10 | loss 3.2944
+  step  20 | loss 3.0983
+  step  30 | loss 3.3624
+  step  40 | loss 3.2190
+  step  50 | loss 3.2470
+
+  Initial loss: 3.6607  (expected ~3.30)
+
+--- Phase 2: Adam (200 steps) ---
+  step   1 | loss 3.4697
+  step  20 | loss 2.7294
+  step  40 | loss 2.6779
+  step  60 | loss 2.4926
+  step  80 | loss 2.6632
+  step 100 | loss 2.5136
+  step 120 | loss 2.0913
+  step 140 | loss 2.4232
+  step 160 | loss 2.2718
+  step 180 | loss 2.7223
+  step 200 | loss 1.8090
+
+--- Results ---
+  SGD  after  50 steps: 3.2470
+  Adam after 200 steps: 1.8090
+  [pass] loss decreased during training
+  [pass] final loss < 2.5 (good convergence)
+
+============================================================
+ Exercise 5 complete!
+============================================================
