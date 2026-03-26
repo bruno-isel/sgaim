@@ -107,6 +107,7 @@ params = [p for mat in state_dict.values() for row in mat for p in row]
 #    What might different heads learn to focus on?
 #    (Analogy: reading a sentence for grammar vs. for meaning
 #    vs. for emotional tone — different "perspectives".)
+# neste caso cada cabeça pode focar em perspetivas diferentes. como gramatica, significado e emocao.
 #
 # 2. What is a residual connection?  If the input to a block is x
 #    and the block computes f(x), the output with a residual is
@@ -135,7 +136,9 @@ def gpt(token_id, pos_id, keys, values):
     # add them together, then apply rmsnorm.
     tok_emb = state_dict['wte'][token_id]
     pos_emb = state_dict['wpe'][pos_id]
-    x = [t + p for t, p in zip(tok_emb, pos_emb)]
+    x = []
+    for t, p in zip(tok_emb, pos_emb):
+        x.append(t + p)
     x = rmsnorm(x)
 
     for li in range(n_layer):
@@ -169,13 +172,35 @@ def gpt(token_id, pos_id, keys, values):
         # of length n_embd.
         #
         # Then project: x = linear(x_attn, attn_wo)
-        raise NotImplementedError("TODO 1: multi-head attention")
+        x_attn = []
+        scale = head_dim ** 0.5
+        for h in range(n_head):
+            hs = h * head_dim
+            # Extract the slice for this head
+            q_h = q[hs:hs + head_dim]
+            k_h = [ki[hs:hs + head_dim] for ki in keys[li]]
+            v_h = [vi[hs:hs + head_dim] for vi in values[li]]
+            # Attention scores and weights
+            attn_scores = []
+            for t in range(len(k_h)):
+                score = 0
+                for j in range(head_dim):
+                    score += q_h[j] * k_h[t][j]
+                attn_scores.append(score / scale)
+            attn_weights = softmax(attn_scores)
+            # Weighted sum of values
+            head_out = [
+                sum(attn_weights[t] * v_h[t][j] for t in range(len(v_h)))
+                for j in range(head_dim)
+            ]
+            x_attn.extend(head_out)
+        x = linear(x_attn, state_dict[f'layer{li}.attn_wo'])
 
         # -- TODO 2: Residual connection around attention -------
         #
         # Add the original input (x_residual) back to x.
         # This is x = x + x_residual, element-wise.
-        raise NotImplementedError("TODO 2: residual connection")
+        x = [a + b for a, b in zip(x, x_residual)]
 
         # ======================================================
         # Step 2b: MLP block
@@ -192,10 +217,12 @@ def gpt(token_id, pos_id, keys, values):
         #
         # The "4x expansion" is standard in Transformers — the MLP
         # first expands the representation, then compresses it back.
-        raise NotImplementedError("TODO 3: MLP block")
+        x = linear(x, state_dict[f'layer{li}.mlp_fc1'])
+        x = [xi.relu() for xi in x]
+        x = linear(x, state_dict[f'layer{li}.mlp_fc2'])
 
         # -- TODO 4: Residual connection around MLP -------------
-        raise NotImplementedError("TODO 4: residual connection")
+        x = [a + b for a, b in zip(x, x_residual)]
 
     # Step 3: Project to vocabulary
     logits = linear(x, state_dict['lm_head'])
