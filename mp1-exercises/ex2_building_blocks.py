@@ -199,6 +199,10 @@ if __name__ == "__main__":
 #   - Would subtracting any other constant also work?
 #   - Is this trick specific to softmax, or a general pattern
 #     for working with exponentials?
+#
+# Subtrair o max funciona porque e^(x_i - c) / Σe^(x_j - c) = e^(x_i)/Σe^(x_j) — o e^(-c) cancela.
+# Qualquer constante funciona matematicamente, mas o max garante expoentes <= 0, evitando overflow.
+# É um padrão geral (log-sum-exp trick) aplicável sempre que se trabalha com exponenciais.
 # ==============================================================
 
 # == EXPLORE (optional) ========================================
