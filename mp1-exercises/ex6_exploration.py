@@ -388,9 +388,7 @@ if __name__ == "__main__":
     #          vs. block_size=16.  What will happen to names
     #          longer than 4 characters?
     #
-    # Com block_size=4 o modelo só vê os últimos 4 tokens ao gerar cada caracter, perdendo contexto para nomes mais longos. 
-    # a loss vai ser semelhante ou até melhor pois o dataset são nomes curtos e o modelo não precisa aprender a manter coerência além de 4 caracteres.
-    # a partir do 4o caracter os nomes vao ficar incoerentes devido à falta de contexto.
+    # Com block_size=4 o modelo só vê os últimos 4 tokens, por isso os nomes gerados com mais de 4 caracteres vão ficar incoerentes ou simplesmente não vão existir — o modelo nunca aprendeu a gerar além dessa posição.
 
     print("\n--- Experiment 5: Short context window ---")
     print("  Training with block_size=4...")
@@ -405,8 +403,7 @@ if __name__ == "__main__":
         print(f"    {name}  (length {len(name)})")
 
     # YOUR EXPLANATION:
-    # A loss com block_size=4 ficou próxima da baseline, o que faz sentido porque a maioria dos nomes no dataset tem menos de 10 caracteres e as dependências locais (últimos 4 tokens) são suficientes para capturar os padrões mais frequentes.
-    # Os nomes gerados tendem a ser curtos ou a terminar mais cedo, porque o modelo nunca viu sequências de treino mais longas que 4 posições e não aprendeu a manter coerência além desse horizonte.
+    # Todos os nomes gerados têm exatamente 4 caracteres — o modelo nunca treinou em sequências mais longas que 4 posições, por isso não aprendeu a continuar a gerar além disso. Os nomes parecem plausíveis nos primeiros caracteres, mas são todos truncados.
 
     print("\n" + "=" * 60)
     print(" Exercise 6 complete!")
