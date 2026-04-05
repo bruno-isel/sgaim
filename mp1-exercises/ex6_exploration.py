@@ -226,7 +226,8 @@ def generate(forward_fn, state_dict, config, temperature=0.5, max_length=None):
         #
         # Why?  Think about what dividing logits by a small number
         # does to the differences between them before softmax.
-        raise NotImplementedError("TODO 1")
+        scaled_logits = [l / temperature for l in logits]
+        probs = softmax(scaled_logits)
 
         # -- TODO 2: Sample from the distribution ---------------
         #
@@ -237,14 +238,16 @@ def generate(forward_fn, state_dict, config, temperature=0.5, max_length=None):
         #
         # population is range(vocab_size), weights are the
         # probabilities (.data of each Value).
-        raise NotImplementedError("TODO 2")
+        token_id = random.choices(range(vocab_size), weights=[p.data for p in probs])[0]
 
         # -- TODO 3: End-of-sequence detection ------------------
         #
         # If the sampled token is BOS, the name is complete (break).
         # Otherwise, convert token_id to a character and append
         # it to the sample list.
-        raise NotImplementedError("TODO 3")
+        if token_id == BOS:
+            break
+        sample.append(uchars[token_id])
 
     return ''.join(sample)
 
@@ -292,7 +295,11 @@ if __name__ == "__main__":
     #
     # PREDICT: What will names look like at temp=0.1 vs temp=2.0?
     #          Which will look more like real names?
-    #
+
+    # temp=0.1: muito baixa, o modelo escolhe sempre os tokens mais prováveis, nomes repetitivos e "seguros"
+    # Entre o conservador e o normal — ainda favorece os tokens mais prováveis                    
+    # temp=1.0: sem alteração, comportamento normal do modelo 
+    # temp=2.0: muito alta, as probabilidades ficam mais uniformes, mais aleatoriedade, nomes estranhos/inválidos  
     # Run this, then explain what you observe.
 
     print("\n--- Experiment 1: Temperature ---")
@@ -302,7 +309,11 @@ if __name__ == "__main__":
         print(f"  temp={temp:.1f}: {', '.join(names)}")
 
     # YOUR EXPLANATION:
-    # ...
+    # temp baixa (0.1) — logits divididos por 0.1 ficam muito maiores, softmax amplifica as diferenças, o token mais provável fica comprobabilidade quase 1, os outros quase 0, sempre escolhe o mesmo 
+    # Logits divididos por 0.5 ficam maiores (multiplicados por 2), o softmax ainda favorece os tokens mais prováveis mas sem eliminar completamente os outros, resultando em escolhas variadas mas coerentes.  
+    # temp=1.0 — sem alteração dos logits, comportamento aprendido pelo modelo   
+    # temp alta (2.0) — logits divididos por 2 ficam menores, softmax nivela as diferenças, todos os tokens ficam com probabilidade semelhante, escolha quase aleatória
+  
 
     # ===========================================================
     # EXPERIMENT 2: No residual connections
@@ -311,6 +322,8 @@ if __name__ == "__main__":
     # PREDICT: What will happen to the training loss if we remove
     #          residual connections?  Will the model still learn?
     #          Will it learn slower, faster, or not at all?
+    # 
+    # Sem residual connections o gradiente pode desaparecer nas camadas mais profundas, o modelo vai aprender mais devagar ou não convergir de todo dependendo do número de camadas.
 
     print("\n--- Experiment 2: No residual connections ---")
     print("  Training without residual connections...")
@@ -320,7 +333,7 @@ if __name__ == "__main__":
     print(f"  No-residual final loss: {hist_nores[-1]:.4f}")
 
     # YOUR EXPLANATION:
-    # ...
+    # sem residual connections a loss ficou em 2.78 vs 2.04 com residual. O modelo ainda aprendeu (desceu de mais alto), mas converge pior e para um mínimo mais alto.
 
     # ===========================================================
     # EXPERIMENT 3: No normalization
@@ -328,6 +341,8 @@ if __name__ == "__main__":
     #
     # PREDICT: What will happen if we remove rmsnorm?
     #          Will training be stable?
+    #
+    # Sem RMSNorm os valores podem crescer sem controlo camada a camada, os gradientes explodem (o oposto do vanishing gradient) e o treino provavelmente crasha com overflow.
 
     print("\n--- Experiment 3: No RMSNorm ---")
     print("  Training without RMSNorm...")
@@ -341,7 +356,7 @@ if __name__ == "__main__":
         print("  (This might be expected — explain why.)")
 
     # YOUR EXPLANATION:
-    # ...
+    # Não crashou — o modelo ainda aprendeu mas convergiu pior (2.80 vs 2.04). O treino ficou mais instável (a loss a oscilar mais) mas não deu crash. o modelo é pequeno demais para os valores crescerem o suficiente para causar overflow.
 
     # ===========================================================
     # EXPERIMENT 4: Single head vs. multiple heads
@@ -349,6 +364,9 @@ if __name__ == "__main__":
     #
     # PREDICT: n_head=1 (head_dim=16) vs. n_head=4 (head_dim=4).
     #          Same total parameters.  Which learns better?
+    #
+    #  4 heads aprende melhor. cada uma foca-se em padrões e perpetivas diferentes do input em paralelo (subespaços distintos do embedding). 
+    # Com 1 cabeça, o modelo tenta capturar tudo com uma única distribuição de atenção, o que limita a expressividade.
 
     print("\n--- Experiment 4: 1 head vs. 4 heads ---")
     print("  Training with 1 head...")
@@ -357,7 +375,10 @@ if __name__ == "__main__":
     print(f"  4 heads final loss: {hist[-1]:.4f}")
 
     # YOUR EXPLANATION:
-    # ...
+    # 4 heads convergiram para uma loss mais baixa que 1 unica head, confirmando a previsão. 
+    # Apesar de cada head ter head_dim=4 (vs 16 com 1 head), a diversidade de padrões de atenção que podem ser aprendidos em paralelo compensa a menor capacidade individual por head. 
+    # Com 1 head, o modelo é forçado a comprimir toda a informação contextual numa única matriz de atenção, enquanto 4 heads permitem especializações diferentes 
+    # (e.g., uma head aprende dependências de curto alcance, outra de longo alcance).
 
     # ===========================================================
     # EXPERIMENT 5: Context window size
@@ -366,6 +387,10 @@ if __name__ == "__main__":
     # PREDICT: block_size=4 (sees only 4 characters of history)
     #          vs. block_size=16.  What will happen to names
     #          longer than 4 characters?
+    #
+    # Com block_size=4 o modelo só vê os últimos 4 tokens ao gerar cada caracter, perdendo contexto para nomes mais longos. 
+    # a loss vai ser semelhante ou até melhor pois o dataset são nomes curtos e o modelo não precisa aprender a manter coerência além de 4 caracteres.
+    # a partir do 4o caracter os nomes vao ficar incoerentes devido à falta de contexto.
 
     print("\n--- Experiment 5: Short context window ---")
     print("  Training with block_size=4...")
@@ -380,7 +405,8 @@ if __name__ == "__main__":
         print(f"    {name}  (length {len(name)})")
 
     # YOUR EXPLANATION:
-    # ...
+    # A loss com block_size=4 ficou próxima da baseline, o que faz sentido porque a maioria dos nomes no dataset tem menos de 10 caracteres e as dependências locais (últimos 4 tokens) são suficientes para capturar os padrões mais frequentes.
+    # Os nomes gerados tendem a ser curtos ou a terminar mais cedo, porque o modelo nunca viu sequências de treino mais longas que 4 posições e não aprendeu a manter coerência além desse horizonte.
 
     print("\n" + "=" * 60)
     print(" Exercise 6 complete!")
