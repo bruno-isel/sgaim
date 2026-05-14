@@ -5,7 +5,7 @@ import ollama
 CORPUS_DIR = "atlantico-corpus"
 CHROMA_DIR = "chroma_db"
 COLLECTION = "cdram"
-CHUNK_SIZE = 500   # palavras por chunk
+CHUNK_SIZE = 200   # palavras por chunk
 OVERLAP    = 50    # palavras de sobreposição entre chunks
 
 
