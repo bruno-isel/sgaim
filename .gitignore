@@ -1,3 +1,4 @@
 .DS_Store
 .env
 *.docx
+mp2/chroma_db
