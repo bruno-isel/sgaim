@@ -2,7 +2,7 @@ import os
 import chromadb
 import ollama
 
-CORPUS_DIR = "07_cdram-corpus"
+CORPUS_DIR = "atlantico-corpus"
 CHROMA_DIR = "chroma_db"
 COLLECTION = "cdram"
 CHUNK_SIZE = 500   # palavras por chunk
